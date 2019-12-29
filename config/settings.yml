@@ -2,4 +2,8 @@ plugins:
   discourse_social_bbcode_enabled:
     refresh: true
     client: true
-    default: false
+    default: true
+  discourse_social_bbcode_auto_scan:
+      refresh: true
+      client: true
+      default: true
