@@ -1,6 +1,7 @@
 # discourse-social-bbcode
-Discourse plugin to allow inserting social buttons in posts
+Discourse plugin to allow inserting social buttons in topics
 
-![](screenshot1.png)
+```
+```
 
 ![](screenshot2.png)

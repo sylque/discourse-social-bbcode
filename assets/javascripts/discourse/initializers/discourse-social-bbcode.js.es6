@@ -8,8 +8,6 @@ export default {
       return
     }
 
-    const autoScan = app.SiteSettings['discourse_social_bbcode_auto_scan']
-
     // Facebook asynchronous init. See:
     // https://developers.facebook.com/docs/javascript/quickstart/
     // https://developers.facebook.com/docs/internationalization#locales
@@ -17,7 +15,7 @@ export default {
       FB.init({
         appId: 'your-app-id',
         autoLogAppEvents: true,
-        xfbml: autoScan,
+        xfbml: false, // Disable Facebook scan on load
         version: 'v5.0'
       })
     }
@@ -30,26 +28,28 @@ export default {
       )
     ])
 
+    const scan = app.SiteSettings['discourse_social_bbcode_auto_scan']
+
     withPluginApi('0.8.30', api => {
-      if (autoScan) {
+      // Disable Twitter scan no load
+      // https://developer.twitter.com/en/docs/twitter-for-websites/webpage-properties/overview
+      // https://meta.discourse.org/t/how-to-allow-certain-html-tags-in-customization/83592/3?u=syl
+      api.decorateWidget('header-contents:after', helper =>
+        helper.rawHtml('<meta name="twitter:widgets:autoload" content="off">')
+      )
+
+      if (scan) {
         // Refire twitter and facebook on page change
         api.decorateCooked(
           $elem => {
             scriptLoaded.then(() => {
               scanPage($elem.get(0))
-            })            
+            })
           },
           {
             id: 'discourse-social-bbcode',
             onlyStream: true
           }
-        )
-      } else {
-        // Disable Twitter auto scan
-        // https://developer.twitter.com/en/docs/twitter-for-websites/webpage-properties/overview
-        // https://meta.discourse.org/t/how-to-allow-certain-html-tags-in-customization/83592/3?u=syl
-        api.decorateWidget('header-contents:after', helper =>
-          helper.rawHtml('<meta name="twitter:widgets:autoload" content="off">')
         )
       }
     })
@@ -57,7 +57,7 @@ export default {
     // Set a global function to be called by other plugins to scan pages
     // manually
     window.discourseSocialBBCodeScan = rootElement => {
-      if (!autoScan) {
+      if (!scan) {
         scriptLoaded.then(() => {
           scanPage(rootElement)
         })
@@ -77,36 +77,46 @@ const scanPage = rootElement => {
   window.FB && window.FB.XFBML.parse(rootElement)
 
   // Set up a click handler for the "mailto" links and buttons
-  rootElement.removeEventListener('click', onEmailClick)
-  rootElement.addEventListener('click', onEmailClick)
+  rootElement
+    .querySelectorAll('a.sbb-mailtolink, span.sbb-mailtobutton')
+    .forEach(link => {
+      link.addEventListener('click', e => {
+        onEmailClick(link)
+      })
+    })
 }
 
-const onEmailClick = event => {
-  const link = event.target.closest('a.sbb-mailtolink, span.sbb-mailtobutton')
-  if (link) {
-    // Create the "mailto" query param string
-    const params = Object.keys(link.dataset)
-      .map(key => {
-        const value = encodeURIComponent(decodeHtmlEntities(link.dataset[key]))
-        return `${key}=${value}`
-      })
-      .join('&')
+const onEmailClick = link => {
+  // Create the "mailto" query param string
+  const params = Object.keys(link.dataset)
+    .map(key => {
+      const value = encodeURIComponent(decodeHtmlEntities(link.dataset[key]))
+      return `${key}=${value}`
+    })
+    .join('&')
 
-    // https://stackoverflow.com/a/9880404/3567351
-    const myWindow = window.open(`mailto:?${params}`)
+  // https://stackoverflow.com/a/9880404/3567351
+  const myWindow = window.open(`mailto:?${params}`)
 
-    // Now we need to deal with the problem that a blank tab is
-    // opened on Firefox (not Chrome) when the user uses an external
-    // email client (for example Outlook). We need to close this
-    // useless blank tab.
-    // https://stackoverflow.com/a/42034130/3567351
-    myWindow.onload = () => {
-      try {
-        if (myWindow.location.href === 'about:blank') {
-          myWindow.close()
-        }
-      } catch (e) {}
-    }
+  // Now we need to deal with the problem that a blank tab is
+  // opened on Firefox (not Chrome) when the user uses an external
+  // email client (for example Outlook). We need to close this
+  // useless blank tab.
+  // https://stackoverflow.com/a/42034130/3567351
+  myWindow.onload = () => {
+    try {
+      if (myWindow.location.href === 'about:blank') {
+        myWindow.close()
+
+        // Fix for Safari on iOS. See:
+        // https://stackoverflow.com/a/10712923/3567351
+        setTimeout(() => {
+          if (!myWindow.closed) {
+            myWindow.close()
+          }
+        }, 400)
+      }
+    } catch (e) {}
   }
 }
 

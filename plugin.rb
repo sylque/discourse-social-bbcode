@@ -1,5 +1,5 @@
 # name: discourse-social-bbcode
-# about: Discourse plugin to allow inserting social buttons in posts
+# about: Discourse plugin to allow inserting social buttons in topics
 # version: 1.0.0
 # authors: Sylvain Quendez
 
