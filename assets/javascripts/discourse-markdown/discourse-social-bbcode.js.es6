@@ -84,39 +84,14 @@ export function setup(helper) {
     // Display both Like and Share buttons, but the Share button must be activated with the parameters
     // See all possible parameters here:
     // https://developers.facebook.com/docs/plugins/like-button/#settings
-    // Only href and appId parameters are mandatory
     md.inline.bbcode.ruler.push('facebook', {
       tag: 'facebook',
       replace: function(state, tagInfo, content) {
-        if (!tagInfo.attrs.href) {
-          console.log('Missing "href" in facebook bbcode')
-          return false
-        }
-        if (!tagInfo.attrs.appId) {
-          console.log('Missing "appId" in facebook bbcode')
-          return false
-        }
         let token = state.push('span_open', 'span', 1)
         token.attrs = [['class', 'sbb-facebook']]
         token = state.push('html_raw', '', 0)
 
-        /*
-        // The iframe version has the following drawback: it does not  resize 
-        // well, so it is hard to inline with other blocks.
         const params = Object.keys(tagInfo.attrs)
-          .map(key => `${key}=${encodeURIComponent(tagInfo.attrs[key])}`)
-          .join('&')
-        token.content = `
-          <iframe src="https://www.facebook.com/plugins/like.php?${params}" 
-              width="450" height="35" 
-              style="border:none;overflow:hidden" scrolling="no" frameborder="0" 
-              allowTransparency="true" allow="encrypted-media">
-          </iframe>
-        `
-        */
-
-        const params = Object.keys(tagInfo.attrs)
-          .filter(key => key !== 'appId')
           .map(key => `data-${key}="${tagInfo.attrs[key]}"`)
           .join(' ')
 
