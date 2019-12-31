@@ -8,6 +8,15 @@ export default {
       return
     }
 
+    // Load Twitter
+    const twitterLoaded = getScript(
+      'https://platform.twitter.com/widgets.js'
+    ).catch(e =>
+      console.log(
+        "discourse-social-bbcode error: Twitter script couldn't load"
+      )
+    )
+
     // Facebook asynchronous init. See:
     // https://developers.facebook.com/docs/javascript/quickstart/
     // https://developers.facebook.com/docs/internationalization#locales
@@ -20,15 +29,22 @@ export default {
       })
     }
 
-    // Load Twitter and Facebook script
-    const scriptLoaded = Promise.all([
-      getScript('https://platform.twitter.com/widgets.js'),
-      getScript(
-        `https://connect.facebook.net/${app.SiteSettings.default_locale}/sdk.js`
+    // Load Facebook
+    const facebookLoaded = getScript(
+      `https://connect.facebook.net/${app.SiteSettings.default_locale}/sdk.js`
+    ).catch(e =>
+      console.log(
+        "discourse-social-bbcode error: Facebook script couldn't load"
       )
-    ])
+    )
 
-    const scan = app.SiteSettings['discourse_social_bbcode_auto_scan']
+    // Get the categories
+    const catNamesStr = app.SiteSettings[
+      'discourse_social_bbcode_categories'
+    ].trim()
+    const catNames = catNamesStr.length
+      ? catNamesStr.split(',').map(n => n.trim())
+      : undefined
 
     withPluginApi('0.8.30', api => {
       // Disable Twitter scan no load
@@ -38,52 +54,50 @@ export default {
         helper.rawHtml('<meta name="twitter:widgets:autoload" content="off">')
       )
 
-      if (scan) {
-        // Refire twitter and facebook on page change
-        api.decorateCooked(
-          $elem => {
-            scriptLoaded.then(() => {
-              scanPage($elem.get(0))
-            })
-          },
-          {
-            id: 'discourse-social-bbcode',
-            onlyStream: true
+      // Refire twitter and facebook on topic rendering
+      api.decorateCooked(
+        ($elem, helper) => {
+          // We support social buttons in topics only, not posts
+          // We also support social buttons on topics rendered with no helper,
+          // such as DiscPage pages.
+          if (helper && !helper.widget.attrs.firstPost) {
+            return
           }
-        )
-      }
-    })
 
-    // Set a global function to be called by other plugins to scan pages
-    // manually
-    window.discourseSocialBBCodeScan = rootElement => {
-      if (!scan) {
-        scriptLoaded.then(() => {
-          scanPage(rootElement)
-        })
-      }
-    }
+          // If category is wrong, quit
+          if (catNames) {
+            // If this way of getting the category doesn't work in the future,
+            // we could use helper.widget.attrs.topicId
+            const currentCatName = $('#topic-title span.category-name').text()
+            if (!catNames.includes(currentCatName)) {
+              return
+            }
+          }
+
+          // Activate email links/buttons
+          $elem
+            .find('a.sbb-mailtolink, span.sbb-mailtobutton')
+            .click(e => onEmailClick(link))
+
+          // Refire Twitter. See:
+          // https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/scripting-loading-and-initialization
+          twitterLoaded.then(
+            () => window.twttr && window.twttr.widgets.load($elem.get(0))
+          )
+
+          // Refire Facebook. See:
+          // https://developers.facebook.com/docs/reference/javascript/FB.XFBML.parse/
+          facebookLoaded.then(
+            () => window.FB && window.FB.XFBML.parse($elem.get(0))
+          )
+        },
+        {
+          id: 'discourse-social-bbcode',
+          onlyStream: true // Don't really know what this is. The firstPost above *is* required. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        }
+      )
+    })
   }
-}
-
-// Function to fire twitter and facebook parsing of the page
-const scanPage = rootElement => {
-  // Refire Twitter. See:
-  // https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/scripting-loading-and-initialization
-  window.twttr && window.twttr.widgets.load(rootElement)
-
-  // Refire Facebook. See:
-  // https://developers.facebook.com/docs/reference/javascript/FB.XFBML.parse/
-  window.FB && window.FB.XFBML.parse(rootElement)
-
-  // Set up a click handler for the "mailto" links and buttons
-  rootElement
-    .querySelectorAll('a.sbb-mailtolink, span.sbb-mailtobutton')
-    .forEach(link => {
-      link.addEventListener('click', e => {
-        onEmailClick(link)
-      })
-    })
 }
 
 const onEmailClick = link => {

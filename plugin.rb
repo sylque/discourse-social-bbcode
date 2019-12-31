@@ -27,7 +27,6 @@ enabled_site_setting :discourse_social_bbcode_enabled
 extend_content_security_policy(
   script_src: [
     'https://platform.twitter.com', 
-    #'\'sha256-6wRdeNJzEHNIsDAMAdKbdVLWIqu8b6+Bs+xVNZqplQw=\'',
     'https://connect.facebook.net'
   ]
 )

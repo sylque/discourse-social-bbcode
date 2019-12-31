@@ -3,7 +3,7 @@ plugins:
     refresh: true
     client: true
     default: true
-  discourse_social_bbcode_auto_scan:
+  discourse_social_bbcode_categories:
       refresh: true
       client: true
-      default: true
+      default: ""

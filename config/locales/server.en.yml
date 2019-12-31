@@ -1,4 +1,4 @@
 en:
   site_settings:
     discourse_social_bbcode_enabled: 'Enable the Discourse Social BBCode plugin'
-    discourse_social_bbcode_auto_scan: 'Automatically scan pages to activate social buttons. Set this to false if you intend to activate the social buttons manually using window.discourseSocialBBCodeScan().'
+    discourse_social_bbcode_categories: 'Coma-separated list of categories where social buttons will be activated. Leave empty to activate social buttons everywhere.'
