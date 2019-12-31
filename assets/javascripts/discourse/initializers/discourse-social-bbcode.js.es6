@@ -114,23 +114,18 @@ const onEmailClick = link => {
   // Now we need to deal with the problem that a blank tab is
   // opened on Firefox (not Chrome) when the user uses an external
   // email client (for example Outlook). We need to close this
-  // useless blank tab.
+  // useless blank tab. But:
+  // On Safari and Firefox, "onload" doesn't work
+  // On Chrome, closing too fast doesn't work (the 'about:blank' test is true
+  // even if there will be something in there later)
   // https://stackoverflow.com/a/42034130/3567351
-  myWindow.onload = () => {
+  setTimeout(() => {
     try {
       if (myWindow.location.href === 'about:blank') {
         myWindow.close()
-
-        // Fix for Safari on iOS. See:
-        // https://stackoverflow.com/a/10712923/3567351
-        setTimeout(() => {
-          if (!myWindow.closed) {
-            myWindow.close()
-          }
-        }, 400)
       }
     } catch (e) {}
-  }
+  }, 500)
 }
 
 const decodeHtmlEntities = str =>
