@@ -12,9 +12,7 @@ export default {
     const twitterLoaded = getScript(
       'https://platform.twitter.com/widgets.js'
     ).catch(e =>
-      console.log(
-        "discourse-social-bbcode error: Twitter script couldn't load"
-      )
+      console.log("discourse-social-bbcode error: Twitter script couldn't load")
     )
 
     // Facebook asynchronous init. See:
@@ -22,7 +20,7 @@ export default {
     // https://developers.facebook.com/docs/internationalization#locales
     window.fbAsyncInit = function() {
       FB.init({
-        appId: 'your-app-id',
+        appId: 'your-app-id', // We don't provide a valid app id, it seems it works anyway
         autoLogAppEvents: true,
         xfbml: false, // Disable Facebook scan on load
         version: 'v5.0'
@@ -75,9 +73,10 @@ export default {
           }
 
           // Activate email links/buttons
-          $elem
-            .find('a.sbb-mailtolink, span.sbb-mailtobutton')
-            .click(e => onEmailClick(link))
+          const links = $elem.find('a.sbb-mailtolink, span.sbb-mailtobutton')
+          links.each((i, link) => {
+            link.addEventListener('click', () => onEmailClick(link))
+          })
 
           // Refire Twitter. See:
           // https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/scripting-loading-and-initialization
