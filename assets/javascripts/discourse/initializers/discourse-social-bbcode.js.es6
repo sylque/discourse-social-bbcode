@@ -3,8 +3,10 @@ import { withPluginApi } from 'discourse/lib/plugin-api'
 export default {
   name: 'discourse-social-bbcode',
   initialize(container, app) {
+    const siteSettings = container.lookup('site-settings:main')
+
     // If plugin is disabled, quit
-    if (!app.SiteSettings['discourse_social_bbcode_enabled']) {
+    if (!siteSettings['discourse_social_bbcode_enabled']) {
       return
     }
 
@@ -28,8 +30,10 @@ export default {
     }
 
     // Load Facebook
+    // DOESN'T WORK!!! siteSettings.default_locale doesn't include the
+    // region, which is expected by Facebook
     const facebookLoaded = getScript(
-      `https://connect.facebook.net/${app.SiteSettings.default_locale}/sdk.js`
+      `https://connect.facebook.net/${siteSettings.default_locale}/sdk.js`
     ).catch(e =>
       console.log(
         "discourse-social-bbcode error: Facebook script couldn't load"
@@ -37,7 +41,7 @@ export default {
     )
 
     // Get the categories
-    const catNamesStr = app.SiteSettings[
+    const catNamesStr = siteSettings[
       'discourse_social_bbcode_categories'
     ].trim()
     const catNames = catNamesStr.length
@@ -72,12 +76,6 @@ export default {
             }
           }
 
-          // Activate email links/buttons
-          const links = $elem.find('a.sbb-mailtolink, span.sbb-mailtobutton')
-          links.each((i, link) => {
-            link.addEventListener('click', () => onEmailClick(link))
-          })
-
           // Refire Twitter. See:
           // https://developer.twitter.com/en/docs/twitter-for-websites/javascript-api/guides/scripting-loading-and-initialization
           twitterLoaded.then(
@@ -89,10 +87,24 @@ export default {
           facebookLoaded.then(
             () => window.FB && window.FB.XFBML.parse($elem.get(0))
           )
+
+          // Activate instagram buttons
+          const instagram = $elem.find('span.sbb-instagram')
+          instagram.each((i, el) => {
+            el.addEventListener('click', () => {
+              window.open(`http://www.instagram.com/${el.dataset.user}`)
+            })
+          })
+
+          // Activate email links/buttons
+          const mailto = $elem.find('a.sbb-mailtolink, span.sbb-mailtobutton')
+          mailto.each((i, el) => {
+            el.addEventListener('click', () => onEmailClick(el))
+          })
         },
         {
           id: 'discourse-social-bbcode',
-          onlyStream: true // Don't really know what this is. The firstPost above *is* required. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          onlyStream: true // Don't really know what this is. The "firstPost" test above *is* required. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         }
       )
     })
@@ -118,7 +130,7 @@ const onEmailClick = link => {
   // On Safari and Firefox, "onload" doesn't work
   // On Chrome, closing too fast doesn't work (the 'about:blank' test is true
   // even if there will be something in there later)
-  // https://stackoverflow.com/a/42034130/3567351
+  // On iOS, window.close doesn't work at all. No workaround proved to work.
   setTimeout(() => {
     try {
       if (myWindow.location.href === 'about:blank') {

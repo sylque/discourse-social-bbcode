@@ -4,3 +4,23 @@
 .sbb-mailtobutton button {
   vertical-align: top;
 }
+
+.sbb-instagram button {
+  width            : 100px;
+  padding: 4px 10px 4px 8px;
+  background-color: white;
+  border: 1px solid lightgrey;
+  border-radius: 5px;
+  &:hover {
+    background-color: #f8f8f8;
+  }
+  .text {
+    display          : inline-block;
+    width: 100%;
+    padding-bottom: 25%;
+    background-image : url(/assets/images/instagram.logo.png);
+    background-size  : contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+  }
+}

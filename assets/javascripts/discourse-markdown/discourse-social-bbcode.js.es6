@@ -9,8 +9,6 @@ export function setup(helper) {
     ] = !!siteSettings.discourse_social_bbcode_enabled
   })
 
-  helper.whiteList(['span.dpg-balloon'])
-
   helper.registerPlugin(md => {
     helper.whiteList(['span.sbb-twitterfollow'])
 
@@ -26,7 +24,6 @@ export function setup(helper) {
       replace: function(state, tagInfo, content) {
         const user = tagInfo.attrs.user
         if (!user) {
-          console.log('Missing "user" in twitterfollow bbcode')
           return false
         }
         let token = state.push('span_open', 'span', 1)
@@ -44,7 +41,6 @@ export function setup(helper) {
           .join(' ')
         token.content = `
           <a href="https://twitter.com/${user}?ref_src=twsrc%5Etfw" class="twitter-follow-button" ${data}>Follow @${user}</a>
-          <!-- <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> -->
         `
         token = state.push('span_close', 'span', -1)
         return true
@@ -72,7 +68,6 @@ export function setup(helper) {
           .join(' ')
         token.content = `
           <a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" ${data}>Tweet</a>
-          <!-- <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>    -->
         `
         token = state.push('span_close', 'span', -1)
         return true
@@ -108,6 +103,40 @@ export function setup(helper) {
       }
     })
 
+    helper.whiteList(['span.sbb-instagram', 'span[data-user=*]'])
+
+    // Parameters:
+    // - btnclasses: space-separated class list for the button
+    // - user
+    md.inline.bbcode.ruler.push('instagram', {
+      tag: 'instagram',
+      replace: function(state, tagInfo, content) {
+        const user = tagInfo.attrs.user
+        if (!user) {
+          return false
+        }
+        let token = state.push('span_open', 'span', 1)
+        token.attrs = [['class', 'sbb-instagram']].concat(
+          Object.keys(tagInfo.attrs)
+            .filter(key => key !== 'btnclasses')
+            .map(key => [`data-${key}`, tagInfo.attrs[key]])
+        )
+        token = state.push('html_raw', '', 0)
+        const classStr = tagInfo.attrs.btnclasses
+          ? ` class="${tagInfo.attrs.btnclasses}"`
+          : ''
+        token.content = `
+          <button${classStr}">
+            <span class="before"></span>
+            <span class="text">Instagram Button</span>
+            <span class="after"></span>
+          </button>
+        `
+        token = state.push('span_close', 'span', -1)
+        return true
+      }
+    })
+
     helper.whiteList([
       'a.sbb-mailtolink',
       'a[data-to=*]',
@@ -120,7 +149,7 @@ export function setup(helper) {
     // Parameters:
     // - btnclasses: space-separated class list for the button
     // - to, cc, bcc, subject, body
-    // To put ' and " in the sibject or body, use &apos; and &quot; respectively
+    // To put ' and " in the subject or body, use &apos; and &quot; respectively
     md.inline.bbcode.ruler.push('mailtolink', {
       tag: 'mailtolink',
       wrap: function(startToken, endToken, tagInfo, content) {
@@ -163,8 +192,11 @@ export function setup(helper) {
             .map(key => [`data-${key}`, tagInfo.attrs[key]])
         )
         token = state.push('html_raw', '', 0)
+        const classStr = tagInfo.attrs.btnclasses
+          ? ` class="${tagInfo.attrs.btnclasses}"`
+          : ''
         token.content = `
-          <button class="${tagInfo.attrs.btnclasses || ''}">
+          <button${classStr}">
             <span class="before">${iconHTML('envelope')}</span>
             <span class="text">${content || 'Button'}</span>
             <span class="after"></span>
